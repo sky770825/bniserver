@@ -6,14 +6,17 @@ import json
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-# 創建 Flask 應用
-app = Flask(__name__)
+# 創建 Flask 應用，指定模板和靜態文件路徑
+app = Flask(__name__, 
+            template_folder='../templates',
+            static_folder='../static')
+
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///checkin.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../checkin.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 檔案上傳配置
-app.config['UPLOAD_FOLDER'] = 'static/uploads/avatars'
+app.config['UPLOAD_FOLDER'] = '../static/uploads/avatars'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -756,13 +759,13 @@ def upload_avatar():
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             filename = f"{session['user_id']}_{timestamp}_{filename}"
             
-            # 確保 avatars 目錄存在
-            avatar_dir = os.path.join(app.static_folder, 'avatars')
-            os.makedirs(avatar_dir, exist_ok=True)
-            
-            # 保存檔案
-            file_path = os.path.join(avatar_dir, filename)
-            file.save(file_path)
+                    # 確保 avatars 目錄存在
+        avatar_dir = os.path.join(app.static_folder, 'uploads', 'avatars')
+        os.makedirs(avatar_dir, exist_ok=True)
+        
+        # 保存檔案
+        file_path = os.path.join(avatar_dir, filename)
+        file.save(file_path)
             
             # 更新用戶資料庫
             user = db.session.get(User, session['user_id'])
