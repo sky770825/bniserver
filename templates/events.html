@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}活動 - 簽到系統{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">
+        <i class="fas fa-calendar me-2"></i>活動列表
+    </h2>
+    {% if session.is_admin %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal">
+        <i class="fas fa-plus me-2"></i>新增活動
+    </button>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% for event in events %}
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="fw-bold">{{ event.title }}</h5>
+                    <span class="badge bg-primary">{{ event.location }}</span>
+                </div>
+                
+                <p class="text-muted mb-3">{{ event.description }}</p>
+                
+                <div class="mb-3">
+                    <small class="text-muted">發起人：</small>
+                    <strong>{{ event.organizer.name if event.organizer else '未知' }}</strong>
+                </div>
+                
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">開始時間</small>
+                        <strong>{{ event.start_time.strftime('%m/%d %H:%M') }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">結束時間</small>
+                        <strong>{{ event.end_time.strftime('%m/%d %H:%M') }}</strong>
+                    </div>
+                </div>
+                
+                {% if event.max_participants %}
+                <div class="mb-3">
+                    <small class="text-muted">參與人數限制：{{ event.max_participants }}人</small>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        創建於 {{ event.created_at.strftime('%Y-%m-%d') }}
+                    </small>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-info-circle me-1"></i>查看詳情
+                        </a>
+                        {% if session.is_admin %}
+                        <button class="btn btn-outline-warning btn-sm" onclick="editEvent({{ event.id }}, '{{ event.title }}', '{{ event.description }}', '{{ event.location }}', '{{ event.start_time.strftime('%Y-%m-%dT%H:%M') }}', '{{ event.end_time.strftime('%Y-%m-%dT%H:%M') }}', {{ event.max_participants or 'null' }}, {{ event.organizer_id }})">
+                            <i class="fas fa-edit me-1"></i>編輯
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteEvent({{ event.id }}, '{{ event.title }}')">
+                            <i class="fas fa-trash me-1"></i>刪除
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">目前沒有活動</h5>
+                <p class="text-muted">請稍後再來查看</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 新增活動 Modal -->
+{% if session.is_admin %}
+<div class="modal fade" id="addEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">新增活動</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addEventForm">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">活動標題</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">活動描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="organizer_id" class="form-label">發起人</label>
+                            <select class="form-select" id="organizer_id" name="organizer_id" required>
+                                <option value="">請選擇發起人</option>
+                                {% for user in all_users %}
+                                <option value="{{ user.id }}">{{ user.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">活動地點</label>
+                            <select class="form-select" id="location" name="location" required>
+                                <option value="">請選擇活動地點</option>
+                                <option value="線上例會">線上例會</option>
+                                <option value="線下聚會">線下聚會</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_time" class="form-label">開始時間</label>
+                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="end_time" class="form-label">結束時間</label>
+                            <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_participants" class="form-label">參與人數限制</label>
+                        <input type="number" class="form-control" id="max_participants" name="max_participants" min="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addEvent()">新增活動</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯活動 Modal -->
+<div class="modal fade" id="editEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">編輯活動</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editEventForm">
+                    <input type="hidden" id="edit_event_id" name="event_id">
+                    <div class="mb-3">
+                        <label for="edit_title" class="form-label">活動標題</label>
+                        <input type="text" class="form-control" id="edit_title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">活動描述</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_organizer_id" class="form-label">發起人</label>
+                            <select class="form-select" id="edit_organizer_id" name="organizer_id" required>
+                                <option value="">請選擇發起人</option>
+                                {% for user in all_users %}
+                                <option value="{{ user.id }}">{{ user.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_location" class="form-label">活動地點</label>
+                            <select class="form-select" id="edit_location" name="location" required>
+                                <option value="">請選擇活動地點</option>
+                                <option value="線上例會">線上例會</option>
+                                <option value="線下聚會">線下聚會</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_start_time" class="form-label">開始時間</label>
+                            <input type="datetime-local" class="form-control" id="edit_start_time" name="start_time" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_end_time" class="form-label">結束時間</label>
+                            <input type="datetime-local" class="form-control" id="edit_end_time" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_max_participants" class="form-label">參與人數限制</label>
+                        <input type="number" class="form-control" id="edit_max_participants" name="max_participants" min="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateEvent()">更新活動</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addEvent() {
+    const formData = new FormData(document.getElementById('addEventForm'));
+    
+    $.ajax({
+        url: '/admin/events/add',
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                alert('活動新增成功！');
+                location.reload();
+            } else {
+                alert(response.message);
+            }
+        },
+        error: function() {
+            alert('新增活動失敗，請重試');
+        }
+    });
+}
+
+function editEvent(eventId, title, description, location, startTime, endTime, maxParticipants, organizerId) {
+    document.getElementById('edit_event_id').value = eventId;
+    document.getElementById('edit_title').value = title;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_location').value = location;
+    document.getElementById('edit_start_time').value = startTime;
+    document.getElementById('edit_end_time').value = endTime;
+    document.getElementById('edit_max_participants').value = maxParticipants;
+    document.getElementById('edit_organizer_id').value = organizerId;
+    
+    $('#editEventModal').modal('show');
+}
+
+function updateEvent() {
+    const eventId = document.getElementById('edit_event_id').value;
+    const formData = new FormData(document.getElementById('editEventForm'));
+    
+    $.ajax({
+        url: `/admin/events/edit/${eventId}`,
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success) {
+                alert('活動更新成功！');
+                location.reload();
+            } else {
+                alert(response.message);
+            }
+        },
+        error: function() {
+            alert('更新活動失敗，請重試');
+        }
+    });
+}
+
+function deleteEvent(eventId, eventTitle) {
+    if (confirm(`確定要刪除活動「${eventTitle}」嗎？此操作無法撤銷。`)) {
+        $.ajax({
+            url: `/admin/events/delete/${eventId}`,
+            method: 'POST',
+            success: function(response) {
+                if (response.success) {
+                    alert('活動刪除成功！');
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function() {
+                alert('刪除活動失敗，請重試');
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

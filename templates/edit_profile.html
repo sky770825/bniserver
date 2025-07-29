@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}編輯個人資料 - 簽到系統{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="fw-bold mb-0">
+                    <i class="fas fa-user-edit me-2"></i>編輯個人資料
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">用戶名</label>
+                            <input type="text" class="form-control" id="username" value="{{ user.username }}" readonly>
+                            <small class="text-muted">用戶名無法修改</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">姓名 *</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                            <small class="text-muted">格式：編號/姓名/專業別（例：001/張小明/軟體工程師）</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">電子郵件</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email or '' }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">電話號碼</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="line_id" class="form-label">LINE ID</label>
+                        <input type="text" class="form-control" id="line_id" name="line_id" value="{{ user.line_id or '' }}" placeholder="請輸入您的LINE ID">
+                        <small class="text-muted">用於聯絡和通知</small>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">新密碼</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="留空表示不修改密碼">
+                        <small class="text-muted">如果不需要修改密碼，請留空</small>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('profile') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>返回
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>保存修改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
