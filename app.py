@@ -129,6 +129,15 @@ class EventRegistration(db.Model):
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='registered')  # registered, attended, cancelled
 
+# 健康檢查路由
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'ok',
+        'message': '網站正常運行',
+        'environment': os.environ.get('FLASK_ENV', 'development')
+    })
+
 # 路由
 @app.route('/')
 def index():
