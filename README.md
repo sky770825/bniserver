@@ -27,8 +27,8 @@
 
 ### 1. 克隆項目
 ```bash
-git clone <repository-url>
-cd 簽到網站
+git clone https://github.com/sky770825/bniserver.git
+cd bniserver
 ```
 
 ### 2. 安裝依賴
@@ -151,4 +151,4 @@ gunicorn -w 4 -b 0.0.0.0:5000 app:app
 
 ## 授權
 
-MIT License 
+MIT License
