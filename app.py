@@ -45,7 +45,16 @@ def has_permission(permission):
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///checkin.db'
+
+# 根據環境設置數據庫路徑
+if os.environ.get('FLASK_ENV') == 'production':
+    # 生產環境使用絕對路徑
+    db_path = os.path.join(os.getcwd(), 'checkin.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+else:
+    # 開發環境使用相對路徑
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///checkin.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 檔案上傳配置
