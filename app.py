@@ -5,6 +5,7 @@ import os
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from jinja2 import render_template_string # Added for render_template_string
 
 # 職級選項
 POSITION_OPTIONS = [
@@ -43,6 +44,7 @@ def has_permission(permission):
     
     return False
 
+# 創建 Flask 應用
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 
@@ -64,6 +66,46 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # 確保上傳資料夾存在
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# 簡單的測試路由 - 不依賴數據庫
+@app.route('/test')
+def test():
+    return jsonify({
+        'status': 'ok',
+        'message': 'Flask 應用正常運行',
+        'environment': os.environ.get('FLASK_ENV', 'development'),
+        'port': os.environ.get('PORT', '5000')
+    })
+
+@app.route('/')
+def index_simple():
+    """簡化的首頁，不依賴數據庫"""
+    return render_template_string('''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>簽到系統</title>
+        <meta charset="utf-8">
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+            .container { max-width: 600px; margin: 0 auto; text-align: center; }
+            .btn { padding: 15px 30px; margin: 10px; text-decoration: none; color: white; background: rgba(255,255,255,0.2); border-radius: 10px; display: inline-block; }
+            .btn:hover { background: rgba(255,255,255,0.3); }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🎉 簽到系統</h1>
+            <p>您的網站已經成功部署到 Render！</p>
+            <p>環境：{{ env.get("FLASK_ENV", "development") }}</p>
+            <div>
+                <a href="/test" class="btn">測試 API</a>
+                <a href="/health" class="btn">健康檢查</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    ''', env=os.environ)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -139,54 +181,6 @@ def health():
     })
 
 # 路由
-@app.route('/')
-def index():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user = db.session.get(User, session['user_id'])
-    today = datetime.now().date()
-    
-    # 獲取今日簽到記錄
-    today_checkin = CheckIn.query.filter(
-        CheckIn.user_id == session['user_id'],
-        db.func.date(CheckIn.check_in_time) == today
-    ).first()
-    
-    # 獲取最近的活動
-    upcoming_events = Event.query.filter(
-        Event.start_time >= datetime.now()
-    ).order_by(Event.start_time).limit(5).all()
-    
-    # 獲取用戶註冊的活動
-    user_events = EventRegistration.query.filter(
-        EventRegistration.user_id == session['user_id']
-    ).all()
-    
-    # 計算統計數據
-    current_month = datetime.now().month
-    checkin_count = CheckIn.query.filter(
-        CheckIn.user_id == session['user_id'],
-        db.func.extract('month', CheckIn.check_in_time) == current_month
-    ).count()
-    
-    event_count = EventRegistration.query.filter(
-        EventRegistration.user_id == session['user_id']
-    ).count()
-    
-    # 計算出勤率（簡化計算）
-    total_days = 30  # 假設一個月30天
-    attendance_rate = min(100, int((checkin_count / total_days) * 100)) if total_days > 0 else 0
-    
-    return render_template('index.html', 
-                         user=user, 
-                         today_checkin=today_checkin,
-                         upcoming_events=upcoming_events,
-                         user_events=user_events,
-                         checkin_count=checkin_count,
-                         event_count=event_count,
-                         attendance_rate=attendance_rate)
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
