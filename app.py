@@ -956,25 +956,30 @@ def get_user_avatar(user_id):
 
 # 初始化數據庫和管理員帳號
 with app.app_context():
-    db.create_all()
-    
-    # 創建管理員帳號（如果不存在）
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        admin = User(
-            username='admin',
-            password_hash=generate_password_hash('admin123'),
-            name='001/管理員/系統管理員',
-            email='admin@example.com',
-            is_admin=True,
-            can_add_events=True,
-            can_edit_events=True,
-            can_delete_events=True,
-            can_manage_users=True
-        )
-        db.session.add(admin)
-        db.session.commit()
-        print("管理員帳號已創建")
+    try:
+        db.create_all()
+        
+        # 創建管理員帳號（如果不存在）
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                password_hash=generate_password_hash('admin123'),
+                name='001/管理員/系統管理員',
+                email='admin@example.com',
+                is_admin=True,
+                can_add_events=True,
+                can_edit_events=True,
+                can_delete_events=True,
+                can_manage_users=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("管理員帳號已創建")
+    except Exception as e:
+        print(f"數據庫初始化錯誤：{e}")
+        # 在生產環境中，如果數據庫初始化失敗，我們仍然要讓應用運行
+        pass
 
 if __name__ == '__main__':
     # 開發環境使用 debug 模式，生產環境不使用
