@@ -943,28 +943,29 @@ def get_user_avatar(user_id):
         'position': user.position  # 新增：職級
     })
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        # 創建管理員帳號（如果不存在）
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
-            admin = User(
-                username='admin',
-                password_hash=generate_password_hash('admin123'),
-                name='001/管理員/系統管理員',
-                email='admin@example.com',
-                is_admin=True,
-                can_add_events=True,
-                can_edit_events=True,
-                can_delete_events=True,
-                can_manage_users=True
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("管理員帳號已創建")
+# 初始化數據庫和管理員帳號
+with app.app_context():
+    db.create_all()
     
+    # 創建管理員帳號（如果不存在）
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin = User(
+            username='admin',
+            password_hash=generate_password_hash('admin123'),
+            name='001/管理員/系統管理員',
+            email='admin@example.com',
+            is_admin=True,
+            can_add_events=True,
+            can_edit_events=True,
+            can_delete_events=True,
+            can_manage_users=True
+        )
+        db.session.add(admin)
+        db.session.commit()
+        print("管理員帳號已創建")
+
+if __name__ == '__main__':
     # 開發環境使用 debug 模式，生產環境不使用
     debug_mode = os.environ.get('FLASK_ENV') == 'development'
     app.run(debug=debug_mode, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
