@@ -3,6 +3,22 @@
 {% block title %}首頁 - 簽到系統{% endblock %}
 
 {% block content %}
+<style>
+.event-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #007bff;
+}
+
+.event-card {
+    border: 2px solid transparent;
+}
+
+.event-card:hover .text-primary {
+    color: #0056b3 !important;
+}
+</style>
+
 <div class="hero-section text-center text-white mb-5">
     <h1 class="display-4 fw-bold mb-3">歡迎回來，{{ user.name }}！</h1>
     <p class="lead">今天是 {{ today_checkin.check_in_time.strftime('%Y年%m月%d日') if today_checkin else '尚未簽到' }}</p>
@@ -119,9 +135,9 @@
                 <div class="row">
                     {% for event in upcoming_events %}
                     <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card border-0 bg-light">
+                        <div class="card border-0 bg-light event-card" style="cursor: pointer; transition: all 0.3s ease;" onclick="window.location.href='{{ url_for('event_detail', event_id=event.id) }}'">
                             <div class="card-body">
-                                <h6 class="fw-bold">{{ event.title }}</h6>
+                                <h6 class="fw-bold text-primary">{{ event.title }}</h6>
                                 <p class="text-muted small mb-2">{{ event.description[:50] }}...</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
@@ -129,6 +145,11 @@
                                         {{ event.start_time.strftime('%m/%d %H:%M') }}
                                     </small>
                                     <span class="badge bg-primary">{{ event.location }}</span>
+                                </div>
+                                <div class="mt-2 text-center">
+                                    <small class="text-success">
+                                        <i class="fas fa-arrow-right me-1"></i>點擊查看詳情
+                                    </small>
                                 </div>
                             </div>
                         </div>

@@ -12,37 +12,94 @@
                 </h3>
             </div>
             <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5 class="fw-bold text-primary">
-                            <i class="fas fa-clock me-2"></i>活動時間
-                        </h5>
-                        <p class="mb-2">
-                            <strong>開始：</strong>{{ event.start_time.strftime('%Y年%m月%d日 %H:%M') }}
-                        </p>
-                        <p class="mb-2">
-                            <strong>結束：</strong>{{ event.end_time.strftime('%Y年%m月%d日 %H:%M') }}
-                        </p>
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">
+                                    <i class="fas fa-info-circle me-2"></i>活動資訊
+                                </h6>
+                                <div class="mb-2">
+                                    <strong>發起人：</strong>
+                                    {% if event.organizer %}
+                                    <a href="{{ url_for('view_user_profile', user_id=event.organizer.id) }}" 
+                                       class="text-decoration-none text-primary fw-bold">
+                                        {{ event.organizer.name }}
+                                    </a>
+                                    {% else %}
+                                    未設定
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>開始時間：</strong>{{ event.start_time.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>結束時間：</strong>{{ event.end_time.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>參與人數限制：</strong>
+                                    {% if event.max_participants and event.max_participants > 0 %}
+                                        {{ event.max_participants }}人
+                                    {% else %}
+                                        無限制（全部註冊成員）
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>創建時間：</strong>{{ event.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h5 class="fw-bold text-success">
-                            <i class="fas fa-map-marker-alt me-2"></i>活動地點
-                        </h5>
-                        <p class="mb-2">{{ event.location or '未指定' }}</p>
-                        {% if event.max_participants %}
-                        <p class="mb-2">
-                            <strong>參與人數限制：</strong>{{ event.max_participants }}人
-                        </p>
-                        {% endif %}
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">
+                                    <i class="fas fa-map-marker-alt me-2"></i>活動地點
+                                </h6>
+                                <p class="mb-0">{{ event.location or '未指定' }}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 {% if event.description %}
-                <div class="mb-4">
-                    <h5 class="fw-bold text-info">
-                        <i class="fas fa-info-circle me-2"></i>活動描述
-                    </h5>
-                    <p>{{ event.description }}</p>
+                <div class="row mt-4">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">
+                                    <i class="fas fa-info-circle me-2"></i>活動描述
+                                </h6>
+                                <p class="mb-0">{{ event.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">
+                                    <i class="fas fa-map-marker-alt me-2"></i>活動地點
+                                </h6>
+                                <p class="mb-0">{{ event.location or '未指定' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="row mt-4">
+                    <div class="col-md-8">
+                        <!-- 空白的活動描述區域，保持佈局一致 -->
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">
+                                    <i class="fas fa-map-marker-alt me-2"></i>活動地點
+                                </h6>
+                                <p class="mb-0">{{ event.location or '未指定' }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
                 
@@ -54,11 +111,25 @@
                             <h5 class="fw-bold">您已在此活動簽到</h5>
                             <p class="mb-0">簽到時間：{{ user_checkin.check_in_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                         </div>
+                    {% elif event.end_time < now %}
+                        <div class="alert alert-secondary">
+                            <i class="fas fa-clock fa-2x mb-3"></i>
+                            <h5 class="fw-bold">活動已結束</h5>
+                            <p class="mb-0">活動結束時間：{{ event.end_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <small class="text-muted">活動結束後無法再進行簽到</small>
+                        </div>
+                    {% elif event.start_time > now %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-hourglass-start fa-2x mb-3"></i>
+                            <h5 class="fw-bold">活動尚未開始</h5>
+                            <p class="mb-0">活動開始時間：{{ event.start_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <small class="text-muted">活動開始後才能進行簽到</small>
+                        </div>
                     {% else %}
                         <div class="alert alert-info">
                             <i class="fas fa-calendar-check fa-2x mb-3"></i>
                             <h5 class="fw-bold">活動簽到</h5>
-                            <p class="mb-3">點擊下方按鈕進行活動簽到</p>
+                            <p class="mb-3">活動進行中，點擊下方按鈕進行簽到</p>
                             <button class="btn btn-success btn-lg" onclick="eventCheckin()">
                                 <i class="fas fa-sign-in-alt me-2"></i>活動簽到
                             </button>
@@ -78,20 +149,38 @@
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <h4 class="fw-bold text-primary">{{ participants|length }}</h4>
-                        <small class="text-muted">已簽到人數</small>
+                <div class="row text-center mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <h4 class="fw-bold mb-1">{{ attendance_list|selectattr('is_checked_in')|list|length }}</h4>
+                                <small>已簽到</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <h4 class="fw-bold text-success">
-                            {% if event.max_participants %}
-                                {{ event.max_participants - participants|length }}
-                            {% else %}
-                                ∞
-                            {% endif %}
-                        </h4>
-                        <small class="text-muted">剩餘名額</small>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <h4 class="fw-bold mb-1">{{ attendance_list|rejectattr('is_checked_in')|list|length }}</h4>
+                                <small>缺席</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-info text-white h-100">
+                            <div class="card-body d-flex flex-column justify-content-center">
+                                <h4 class="fw-bold mb-1">
+                                    {% set checked_in_count = attendance_list|selectattr('is_checked_in')|list|length %}
+                                    {% set total_count = all_users|length %}
+                                    {% if total_count > 0 %}
+                                        {{ "%.1f"|format(checked_in_count / total_count * 100) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </h4>
+                                <small>出席率</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -112,25 +201,67 @@
                 </h5>
             </div>
             <div class="card-body">
-                {% if participants %}
-                <div class="list-group list-group-flush">
-                    {% for checkin, user in participants %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>{{ user.name }}</strong>
-                            <br>
-                            <small class="text-muted">{{ checkin.check_in_time.strftime('%m/%d %H:%M') }}</small>
-                        </div>
-                        <span class="badge bg-success">已簽到</span>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">總成員數：{{ all_users|length }}人</small>
                     </div>
-                    {% endfor %}
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">已簽到：{{ attendance_list|selectattr('is_checked_in')|list|length }}人</small>
+                    </div>
                 </div>
-                {% else %}
-                <div class="text-center py-3">
-                    <i class="fas fa-users fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-0">尚無參與者</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>狀態</th>
+                                <th>簽到時間</th>
+                                <th>地點</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendance_list %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary" style="cursor: pointer;" 
+                                    onclick="showUserInfo({{ attendance.user.id }}, '{{ attendance.user.name }}', '{{ attendance.user.email }}', '{{ attendance.user.phone }}', '{{ attendance.user.line_id }}')">
+                                        {{ attendance.user.name }}
+                                    </strong>
+                                    {% if attendance.user.position %}
+                                        <br><small class="badge bg-secondary">{{ attendance.user.position }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.is_checked_in %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>已簽到
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>缺席
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.is_checked_in and attendance.checkin_record %}
+                                        {{ attendance.checkin_record.check_in_time.strftime('%m/%d %H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if attendance.is_checked_in and attendance.checkin_record %}
+                                        {{ attendance.checkin_record.location or '未指定' }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -178,6 +309,54 @@
         </div>
     </div>
 </div>
+
+<!-- 用戶資料模態框 -->
+<div class="modal fade" id="userInfoModal" tabindex="-1" aria-labelledby="userInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userInfoModalLabel">
+                    <i class="fas fa-user me-2"></i>成員資料
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div id="userAvatar" class="mb-3">
+                            <!-- 頭像將由JavaScript填充 -->
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">姓名</label>
+                            <p id="userName" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">職級</label>
+                            <p id="userPosition" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">電子郵件</label>
+                            <p id="userEmail" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">電話號碼</label>
+                            <p id="userPhone" class="mb-0"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted">LINE ID</label>
+                            <p id="userLineId" class="mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -215,5 +394,75 @@ function submitEventCheckin() {
         }
     });
 }
+
+// 顯示用戶資料
+function showUserInfo(userId, userName, userEmail, userPhone, userLineId) {
+    // 填充模態框內容
+    document.getElementById('userName').textContent = userName || '未設定';
+    document.getElementById('userEmail').textContent = userEmail || '未設定';
+    document.getElementById('userPhone').textContent = userPhone || '未設定';
+    document.getElementById('userLineId').textContent = userLineId || '未設定';
+    
+    // 獲取用戶頭像和職級
+    fetch(`/api/user/${userId}/avatar`)
+        .then(response => response.json())
+        .then(data => {
+            const avatarContainer = document.getElementById('userAvatar');
+            if (data.avatar) {
+                avatarContainer.innerHTML = `
+                    <img src="/static/avatars/${data.avatar}" 
+                         alt="頭像" 
+                         class="rounded-circle" 
+                         style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #007bff;">
+                `;
+            } else {
+                avatarContainer.innerHTML = `
+                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
+                         style="width: 100px; height: 100px; border: 3px solid #007bff;">
+                        <i class="fas fa-user fa-2x text-muted"></i>
+                    </div>
+                `;
+            }
+            
+            // 顯示職級
+            const positionElement = document.getElementById('userPosition');
+            if (data.position) {
+                positionElement.innerHTML = `<span class="badge bg-primary">${data.position}</span>`;
+            } else {
+                positionElement.textContent = '未設定';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching avatar:', error);
+            const avatarContainer = document.getElementById('userAvatar');
+            avatarContainer.innerHTML = `
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" 
+                     style="width: 100px; height: 100px; border: 3px solid #007bff;">
+                    <i class="fas fa-user fa-2x text-muted"></i>
+                </div>
+            `;
+            document.getElementById('userPosition').textContent = '未設定';
+        });
+    
+    // 顯示模態框
+    const modal = new bootstrap.Modal(document.getElementById('userInfoModal'));
+    modal.show();
+}
+
+// 添加姓名懸停效果
+document.addEventListener('DOMContentLoaded', function() {
+    const userNames = document.querySelectorAll('.text-primary[onclick]');
+    userNames.forEach(name => {
+        name.addEventListener('mouseenter', function() {
+            this.style.textDecoration = 'underline';
+            this.style.color = '#0056b3';
+        });
+        
+        name.addEventListener('mouseleave', function() {
+            this.style.textDecoration = 'none';
+            this.style.color = '#007bff';
+        });
+    });
+});
 </script>
 {% endblock %} 

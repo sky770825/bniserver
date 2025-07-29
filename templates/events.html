@@ -3,32 +3,206 @@
 {% block title %}活動 - 簽到系統{% endblock %}
 
 {% block content %}
+<style>
+.countdown-timer {
+    text-align: center;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: white;
+    min-width: 100px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.8rem;
+}
+
+.countdown-display {
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.3px;
+}
+
+.countdown-days,
+.countdown-hours,
+.countdown-minutes,
+.countdown-seconds {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin: 0 1px;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.countdown-status {
+    font-size: 0.65rem;
+    opacity: 0.9;
+    margin-top: 2px;
+    display: block;
+}
+
+.countdown-timer.ongoing {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    box-shadow: 0 2px 8px rgba(17, 153, 142, 0.2);
+}
+
+.countdown-timer.ended {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    box-shadow: 0 2px 8px rgba(255, 65, 108, 0.2);
+}
+
+/* 篩選按鈕樣式 */
+.btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.btn-group .btn {
+    border-width: 2px;
+    transition: all 0.3s ease;
+    min-width: 110px;
+    margin: 0;
+    flex: 1;
+    max-width: 150px;
+}
+
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-group .btn.active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border-width: 2px;
+}
+
+/* 移除之前的outline樣式 */
+.btn-group .btn-outline-success,
+.btn-group .btn-outline-warning,
+.btn-group .btn-outline-secondary {
+    color: inherit;
+    border-color: inherit;
+}
+
+.btn-group .btn-outline-success:hover,
+.btn-group .btn-outline-warning:hover,
+.btn-group .btn-outline-secondary:hover {
+    background-color: inherit;
+    border-color: inherit;
+    color: inherit;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .countdown-timer {
+        min-width: 90px;
+        padding: 6px 10px;
+    }
+    
+    .countdown-display {
+        font-size: 0.7rem;
+    }
+    
+    .countdown-days,
+    .countdown-hours,
+    .countdown-minutes,
+    .countdown-seconds {
+        padding: 1px 3px;
+        margin: 0 1px;
+        font-size: 0.7rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn-group .btn {
+        min-width: 100%;
+        max-width: none;
+        font-size: 0.9rem;
+    }
+}
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold">
         <i class="fas fa-calendar me-2"></i>活動列表
     </h2>
-    {% if session.is_admin %}
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal">
+    {% if session.is_admin or has_permission('add_events') %}
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEventModal">
         <i class="fas fa-plus me-2"></i>新增活動
     </button>
     {% endif %}
 </div>
 
-<div class="row">
+<!-- 活動狀態分類 -->
+<div class="mb-4">
+    <div class="btn-group shadow-sm" role="group" aria-label="活動狀態篩選">
+        <button type="button" class="btn btn-primary active fw-bold" onclick="filterEvents('all')">
+            <i class="fas fa-list me-1"></i>全部活動
+        </button>
+        <button type="button" class="btn btn-success fw-bold" onclick="filterEvents('upcoming')">
+            <i class="fas fa-clock me-1"></i>即將到來
+        </button>
+        <button type="button" class="btn btn-warning fw-bold" onclick="filterEvents('ongoing')">
+            <i class="fas fa-play me-1"></i>進行中
+        </button>
+        <button type="button" class="btn btn-secondary fw-bold" onclick="filterEvents('ended')">
+            <i class="fas fa-stop me-1"></i>已結束
+        </button>
+    </div>
+</div>
+
+<div class="row" id="eventsContainer">
     {% for event in events %}
-    <div class="col-lg-6 col-xl-4 mb-4">
+    <div class="col-lg-6 col-xl-4 mb-4 event-card" 
+         data-status="{% if event.end_time < now %}ended{% elif event.start_time > now %}upcoming{% else %}ongoing{% endif %}">
         <div class="card h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <h5 class="fw-bold">{{ event.title }}</h5>
-                    <span class="badge bg-primary">{{ event.location }}</span>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-primary me-2">{{ event.location }}</span>
+                        <!-- 狀態標識 -->
+                        <span class="badge {% if event.end_time < now %}bg-secondary{% elif event.start_time > now %}bg-success{% else %}bg-warning{% endif %}">
+                            {% if event.end_time < now %}
+                                <i class="fas fa-stop me-1"></i>已結束
+                            {% elif event.start_time > now %}
+                                <i class="fas fa-clock me-1"></i>即將到來
+                            {% else %}
+                                <i class="fas fa-play me-1"></i>進行中
+                            {% endif %}
+                        </span>
+                    </div>
                 </div>
+                
+
                 
                 <p class="text-muted mb-3">{{ event.description }}</p>
                 
-                <div class="mb-3">
-                    <small class="text-muted">發起人：</small>
-                    <strong>{{ event.organizer.name if event.organizer else '未知' }}</strong>
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user me-1"></i>發起人：
+                        {% if event.organizer %}
+                        <a href="{{ url_for('view_user_profile', user_id=event.organizer.id) }}" 
+                           class="text-decoration-none text-primary fw-bold">
+                            {{ event.organizer.name }}
+                        </a>
+                        {% else %}
+                        未設定
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-users me-1"></i>參與人數限制：
+                        {% if event.max_participants and event.max_participants > 0 %}
+                            {{ event.max_participants }}人
+                        {% else %}
+                            無限制
+                        {% endif %}
+                    </small>
                 </div>
                 
                 <div class="row text-center mb-3">
@@ -52,18 +226,33 @@
                     <small class="text-muted">
                         創建於 {{ event.created_at.strftime('%Y-%m-%d') }}
                     </small>
-                    <div class="btn-group" role="group">
-                        <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-info-circle me-1"></i>查看詳情
-                        </a>
-                        {% if session.is_admin %}
-                        <button class="btn btn-outline-warning btn-sm" onclick="editEvent({{ event.id }}, '{{ event.title }}', '{{ event.description }}', '{{ event.location }}', '{{ event.start_time.strftime('%Y-%m-%dT%H:%M') }}', '{{ event.end_time.strftime('%Y-%m-%dT%H:%M') }}', {{ event.max_participants or 'null' }}, {{ event.organizer_id }})">
-                            <i class="fas fa-edit me-1"></i>編輯
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteEvent({{ event.id }}, '{{ event.title }}')">
-                            <i class="fas fa-trash me-1"></i>刪除
-                        </button>
-                        {% endif %}
+                    <div class="d-flex align-items-center">
+                        <!-- 倒數計時器 -->
+                        <div class="countdown-timer me-3" data-event-id="{{ event.id }}" data-start-time="{{ event.start_time.isoformat() }}" data-end-time="{{ event.end_time.isoformat() }}">
+                            <div class="countdown-display">
+                                <span class="countdown-days">00</span>d
+                                <span class="countdown-hours">00</span>h
+                                <span class="countdown-minutes">00</span>m
+                                <span class="countdown-seconds">00</span>s
+                            </div>
+                            <small class="countdown-status">準備中</small>
+                        </div>
+                        
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('event_detail', event_id=event.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-info-circle me-1"></i>查看詳情
+                            </a>
+                            {% if session.is_admin or (has_permission('edit_events') and event.organizer_id == session.user_id) %}
+                            <button class="btn btn-outline-warning btn-sm" onclick="editEvent({{ event.id }})">
+                                <i class="fas fa-edit me-1"></i>編輯
+                            </button>
+                            {% endif %}
+                            {% if session.is_admin or (has_permission('delete_events') and event.organizer_id == session.user_id) %}
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteEvent({{ event.id }}, '{{ event.title }}')">
+                                <i class="fas fa-trash me-1"></i>刪除
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -83,7 +272,7 @@
 </div>
 
 <!-- 新增活動 Modal -->
-{% if session.is_admin %}
+{% if session.is_admin or has_permission('add_events') %}
 <div class="modal fade" id="addEventModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -106,12 +295,20 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="organizer_id" class="form-label">發起人</label>
+                            {% if session.is_admin %}
+                            <!-- 管理員可以選擇所有成員 -->
                             <select class="form-select" id="organizer_id" name="organizer_id" required>
                                 <option value="">請選擇發起人</option>
                                 {% for user in all_users %}
                                 <option value="{{ user.id }}">{{ user.name }}</option>
                                 {% endfor %}
                             </select>
+                            {% else %}
+                            <!-- 一般用戶只能是自己 -->
+                            <input type="hidden" id="organizer_id" name="organizer_id" value="{{ session.user_id }}">
+                            <input type="text" class="form-control" value="{{ session.name }}" readonly>
+                            <div class="form-text">發起人為您本人</div>
+                            {% endif %}
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -121,6 +318,13 @@
                                 <option value="線上例會">線上例會</option>
                                 <option value="線下聚會">線下聚會</option>
                             </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="max_participants" class="form-label">參與人數限制</label>
+                            <input type="number" class="form-control" id="max_participants" name="max_participants" 
+                                   min="0" placeholder="0表示無限制（使用全部註冊成員）">
+                            <div class="form-text">留空或輸入0表示無限制，將使用全部註冊成員作為參與人數</div>
                         </div>
                     </div>
                     
@@ -136,10 +340,6 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="max_participants" class="form-label">參與人數限制</label>
-                        <input type="number" class="form-control" id="max_participants" name="max_participants" min="1">
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -149,8 +349,10 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- 編輯活動 Modal -->
+{% if session.is_admin or has_permission('edit_events') %}
 <div class="modal fade" id="editEventModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -174,12 +376,20 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="edit_organizer_id" class="form-label">發起人</label>
+                            {% if session.is_admin %}
+                            <!-- 管理員可以選擇所有成員 -->
                             <select class="form-select" id="edit_organizer_id" name="organizer_id" required>
                                 <option value="">請選擇發起人</option>
                                 {% for user in all_users %}
                                 <option value="{{ user.id }}">{{ user.name }}</option>
                                 {% endfor %}
                             </select>
+                            {% else %}
+                            <!-- 一般用戶只能是自己 -->
+                            <input type="hidden" id="edit_organizer_id" name="organizer_id" value="{{ session.user_id }}">
+                            <input type="text" class="form-control" value="{{ session.name }}" readonly>
+                            <div class="form-text">發起人為您本人</div>
+                            {% endif %}
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -189,6 +399,13 @@
                                 <option value="線上例會">線上例會</option>
                                 <option value="線下聚會">線下聚會</option>
                             </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit_max_participants" class="form-label">參與人數限制</label>
+                            <input type="number" class="form-control" id="edit_max_participants" name="max_participants" 
+                                   min="0" placeholder="0表示無限制（使用全部註冊成員）">
+                            <div class="form-text">留空或輸入0表示無限制，將使用全部註冊成員作為參與人數</div>
                         </div>
                     </div>
                     
@@ -204,10 +421,6 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="edit_max_participants" class="form-label">參與人數限制</label>
-                        <input type="number" class="form-control" id="edit_max_participants" name="max_participants" min="1">
-                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -218,10 +431,131 @@
     </div>
 </div>
 {% endif %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// 倒數計時器功能
+function updateCountdown() {
+    const countdownElements = document.querySelectorAll('.countdown-timer');
+    
+    countdownElements.forEach(element => {
+        const startTime = new Date(element.dataset.startTime);
+        const endTime = new Date(element.dataset.endTime);
+        const now = new Date();
+        
+        let targetTime;
+        let status;
+        let isOngoing = false;
+        let isEnded = false;
+        
+        // 判斷活動狀態
+        if (now < startTime) {
+            // 活動尚未開始
+            targetTime = startTime;
+            status = '準備中';
+        } else if (now >= startTime && now <= endTime) {
+            // 活動進行中
+            targetTime = endTime;
+            status = '進行中';
+            isOngoing = true;
+        } else {
+            // 活動已結束
+            targetTime = endTime;
+            status = '已結束';
+            isEnded = true;
+        }
+        
+        // 計算時間差
+        const timeDiff = targetTime - now;
+        
+        if (timeDiff > 0) {
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            
+            // 更新顯示
+            element.querySelector('.countdown-days').textContent = days.toString().padStart(2, '0');
+            element.querySelector('.countdown-hours').textContent = hours.toString().padStart(2, '0');
+            element.querySelector('.countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+            element.querySelector('.countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+        } else {
+            // 時間已到
+            element.querySelector('.countdown-days').textContent = '00';
+            element.querySelector('.countdown-hours').textContent = '00';
+            element.querySelector('.countdown-minutes').textContent = '00';
+            element.querySelector('.countdown-seconds').textContent = '00';
+        }
+        
+        // 更新狀態和樣式
+        element.querySelector('.countdown-status').textContent = status;
+        element.classList.remove('ongoing', 'ended');
+        if (isOngoing) {
+            element.classList.add('ongoing');
+        } else if (isEnded) {
+            element.classList.add('ended');
+        }
+    });
+}
+
+// 頁面載入時初始化倒數計時器
+document.addEventListener('DOMContentLoaded', function() {
+    updateCountdown();
+    // 每秒更新一次
+    setInterval(updateCountdown, 1000);
+});
+
+// 活動篩選功能
+function filterEvents(status) {
+    const eventCards = document.querySelectorAll('.event-card');
+    const filterButtons = document.querySelectorAll('.btn-group .btn');
+    
+    // 更新按鈕狀態
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // 篩選活動卡片
+    eventCards.forEach(card => {
+        const cardStatus = card.getAttribute('data-status');
+        
+        if (status === 'all' || cardStatus === status) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // 檢查是否有顯示的活動
+    const visibleCards = document.querySelectorAll('.event-card[style="display: block"], .event-card:not([style*="display: none"])');
+    const noEventsMessage = document.getElementById('noEventsMessage');
+    
+    if (visibleCards.length === 0) {
+        if (!noEventsMessage) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'col-12';
+            messageDiv.id = 'noEventsMessage';
+            messageDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">此分類沒有活動</h5>
+                        <p class="text-muted">請選擇其他分類或稍後再來查看</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('eventsContainer').appendChild(messageDiv);
+        }
+    } else {
+        if (noEventsMessage) {
+            noEventsMessage.remove();
+        }
+    }
+}
+
 function addEvent() {
     const formData = new FormData(document.getElementById('addEventForm'));
     
@@ -245,17 +579,22 @@ function addEvent() {
     });
 }
 
-function editEvent(eventId, title, description, location, startTime, endTime, maxParticipants, organizerId) {
-    document.getElementById('edit_event_id').value = eventId;
-    document.getElementById('edit_title').value = title;
-    document.getElementById('edit_description').value = description;
-    document.getElementById('edit_location').value = location;
-    document.getElementById('edit_start_time').value = startTime;
-    document.getElementById('edit_end_time').value = endTime;
-    document.getElementById('edit_max_participants').value = maxParticipants;
-    document.getElementById('edit_organizer_id').value = organizerId;
-    
-    $('#editEventModal').modal('show');
+// 編輯活動
+function editEvent(eventId) {
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+        document.getElementById('edit_event_id').value = event.id;
+        document.getElementById('edit_title').value = event.title;
+        document.getElementById('edit_description').value = event.description;
+        document.getElementById('edit_start_time').value = event.start_time;
+        document.getElementById('edit_end_time').value = event.end_time;
+        document.getElementById('edit_location').value = event.location;
+        document.getElementById('edit_organizer_id').value = event.organizer_id;
+        document.getElementById('edit_max_participants').value = event.max_participants || 0;
+        
+        const editModal = new bootstrap.Modal(document.getElementById('editEventModal'));
+        editModal.show();
+    }
 }
 
 function updateEvent() {

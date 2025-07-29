@@ -12,7 +12,7 @@
                 </h3>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="username" class="form-label">用戶名</label>
@@ -25,6 +25,20 @@
                             <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
                             <small class="text-muted">格式：編號/姓名/專業別（例：001/張小明/軟體工程師）</small>
                         </div>
+                    </div>
+                    
+                    <!-- 頭像上傳 -->
+                    <div class="mb-3">
+                        <label for="avatar" class="form-label">個人頭像</label>
+                        <div class="d-flex align-items-center">
+                            {% if user.avatar %}
+                                <img src="{{ url_for('static', filename=user.avatar) }}" alt="當前頭像" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                                <i class="fas fa-user-circle fa-2x text-muted me-3"></i>
+                            {% endif %}
+                            <input type="file" class="form-control" id="avatar" name="avatar" accept="image/*">
+                        </div>
+                        <small class="text-muted">支援 JPG、PNG、GIF 格式，最大 16MB</small>
                     </div>
                     
                     <div class="row">
@@ -41,9 +55,44 @@
                     
                     <div class="mb-3">
                         <label for="line_id" class="form-label">LINE ID</label>
-                        <input type="text" class="form-control" id="line_id" name="line_id" value="{{ user.line_id or '' }}" placeholder="請輸入您的LINE ID">
-                        <small class="text-muted">用於聯絡和通知</small>
+                        <input type="text" class="form-control" id="line_id" name="line_id" value="{{ user.line_id or '' }}" placeholder="請輸入LINE ID">
                     </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">個人自介</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="50" placeholder="請輸入您的個人自介（最多50字）">{{ user.bio or '' }}</textarea>
+                        <div class="form-text">
+                            <span id="bio-count">0</span>/50 字
+                        </div>
+                    </div>
+                    
+                    {% if session.is_admin %}
+                    <div class="mb-3">
+                        <label for="position" class="form-label">職級</label>
+                        <select class="form-select" id="position" name="position">
+                            <option value="">請選擇職級</option>
+                            <option value="區董顧" {% if user.position == '區董顧' %}selected{% endif %}>區董顧</option>
+                            <option value="執行董顧" {% if user.position == '執行董顧' %}selected{% endif %}>執行董顧</option>
+                            <option value="董顧" {% if user.position == '董顧' %}selected{% endif %}>董顧</option>
+                            <option value="主席" {% if user.position == '主席' %}selected{% endif %}>主席</option>
+                            <option value="副主席" {% if user.position == '副主席' %}selected{% endif %}>副主席</option>
+                            <option value="教育組長" {% if user.position == '教育組長' %}selected{% endif %}>教育組長</option>
+                            <option value="資訊長" {% if user.position == '資訊長' %}selected{% endif %}>資訊長</option>
+                        </select>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label">職級</label>
+                        <div class="form-control-plaintext">
+                            {% if user.position %}
+                                <span class="badge bg-primary">{{ user.position }}</span>
+                            {% else %}
+                                <span class="text-muted">未設定</span>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">職級只能由管理員設定</small>
+                        </div>
+                    </div>
+                    {% endif %}
                     
                     <hr class="my-4">
                     
@@ -66,4 +115,26 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 字數計算功能
+document.getElementById('bio').addEventListener('input', function() {
+    const count = this.value.length;
+    document.getElementById('bio-count').textContent = count;
+    
+    if (count > 50) {
+        this.value = this.value.substring(0, 50);
+        document.getElementById('bio-count').textContent = '50';
+    }
+});
+
+// 頁面載入時計算初始字數
+document.addEventListener('DOMContentLoaded', function() {
+    const bioTextarea = document.getElementById('bio');
+    const count = bioTextarea.value.length;
+    document.getElementById('bio-count').textContent = count;
+});
+</script>
 {% endblock %} 
